@@ -5,7 +5,9 @@ import os.path as osp
 import time
 import warnings
 
-from mmmcv.utils import DictAction
+from mmmcv.utils import DictAction,Config
+
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a segmentor')
@@ -96,6 +98,7 @@ def parse_args():
 
 def main():
     args = parse_args()
+    cfg = Config.fromfile(args.config)
     print("over")
 
 if __name__ == '__main__':
