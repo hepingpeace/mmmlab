@@ -1,3 +1,5 @@
+from argparse import Action, ArgumentParser
+
 class DictAction(Action):
     """
     argparse action to split an argument into KEY=VALUE form
