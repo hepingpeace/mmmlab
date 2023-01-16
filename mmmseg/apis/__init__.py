@@ -1,1 +1,1 @@
-from .train import init_random_seed
+from .train import init_random_seed,set_random_seed

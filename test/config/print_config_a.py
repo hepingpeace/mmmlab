@@ -1,4 +1,4 @@
 from mmmcv.utils import Config
 
-cfg =Config.fromfile('config_0.py')
+cfg =Config.fromfile('config_g.py')
 print(cfg)

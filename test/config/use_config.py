@@ -1,6 +1,6 @@
 from mmmcv.utils import Config
 
-cfg = Config.fromfile('config_0.py')
+cfg = Config.fromfile('config-b.py')
 print(cfg)
 dict(a=1,
      b=dict(b1=[0, 1, 2], b2=None),

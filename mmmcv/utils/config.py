@@ -90,10 +90,11 @@ class Config:
 
     @staticmethod
     def _substitute_predefined_vars(filename, temp_config_name):
-        file_dirname = osp.dirname(filename)
-        file_basename = osp.basename(filename)
-        file_basename_no_extension = osp.splitext(file_basename)[0]
-        file_extname = osp.splitext(filename)[1]
+        file_dirname = osp.dirname(filename) #文件名绝对路径
+        file_basename = osp.basename(filename) #文件基础名字
+        file_basename_no_extension = osp.splitext(file_basename)[0] #不带文件属性
+        file_extname = osp.splitext(filename)[1] #带文件属性
+        #将前面的文件的特征，存到字典里面
         support_templates = dict(
             fileDirname=file_dirname,
             fileBasename=file_basename,
@@ -101,10 +102,14 @@ class Config:
             fileExtname=file_extname)
         with open(filename, encoding='utf-8') as f:
             # Setting encoding explicitly to resolve coding issue on windows
+            # 显式设置编码以解决windows上的编码问题
             config_file = f.read()
         for key, value in support_templates.items():
             regexp = r'\{\{\s*' + str(key) + r'\s*\}\}'
-            value = value.replace('\\', '/')
+            #是创建一个正则表达式。其中，r'{{\s*' + str(key) + r'\s*}}' 是字符串模板，它会被用来搜索匹配的字符串。
+            # '{{\s*' 表示匹配 "{{" 后面跟着零个或多个空格。str(key) 表示在字符串模板中插入变量 key 的值。
+            # '\s*}}' 表示匹配零个或多个空格后面跟着 "}}"。
+            value = value.replace('\\', '/') #然后转化为value保存
             config_file = re.sub(regexp, value, config_file)
         with open(temp_config_name, 'w', encoding='utf-8') as tmp_config_file:
             tmp_config_file.write(config_file)
@@ -162,10 +167,10 @@ class Config:
 
     @staticmethod
     def _file2dict(filename, use_predefined_variables=True):
-        filename = osp.abspath(osp.expanduser(filename)) #获得绝对路径
-        check_file_exist(filename) #检测文件是不是存在
-        fileExtname = osp.splitext(filename)[1] #获取他的后缀名字
-        if fileExtname not in ['.py', '.json', '.yaml', '.yml']: #mmcv里面的格式
+        filename = osp.abspath(osp.expanduser(filename)) # 获得绝对路径
+        check_file_exist(filename) # 检测文件是不是存在
+        fileExtname = osp.splitext(filename)[1] # 获取他的后缀名字
+        if fileExtname not in ['.py', '.json', '.yaml', '.yml']: # mmcv里面的格式
             raise OSError('Only py/yml/yaml/json type are supported now!')
 
         # 临时文件创建
@@ -177,7 +182,7 @@ class Config:
             temp_config_name = osp.basename(temp_config_file.name)
             # Substitute predefined variables
             if use_predefined_variables:
-                Config._substitute_predefined_vars(filename,
+                 Config._substitute_predefined_vars(filename,
                                                    temp_config_file.name)
             else:
                 shutil.copyfile(filename, temp_config_file.name)
@@ -226,15 +231,17 @@ class Config:
             cfg_text += f.read()
 
         if BASE_KEY in cfg_dict:
-            cfg_dir = osp.dirname(filename)
-            base_filename = cfg_dict.pop(BASE_KEY)
+            cfg_dir = osp.dirname(filename) #文件夹
+            base_filename = cfg_dict.pop(BASE_KEY) #base_key:value put into base_filename 里面
+            #通过for循环的将base—filename的key 放到 list 里面
+            # isinstance(object, classinfo) 是 Python 中的内置函数，用于判断一个对象是否是一个已知的类型
             base_filename = base_filename if isinstance(
                 base_filename, list) else [base_filename]
 
             cfg_dict_list = list()
             cfg_text_list = list()
             for f in base_filename:
-                _cfg_dict, _cfg_text = Config._file2dict(osp.join(cfg_dir, f))
+                _cfg_dict, _cfg_text = Config._file2dict(osp.join(cfg_dir, f)) # 通过递归函数多次继承类别
                 cfg_dict_list.append(_cfg_dict)
                 cfg_text_list.append(_cfg_text)
 
@@ -250,7 +257,7 @@ class Config:
             cfg_dict = Config._substitute_base_vars(cfg_dict, base_var_dict,
                                                     base_cfg_dict)
 
-            base_cfg_dict = Config._merge_a_into_b(cfg_dict, base_cfg_dict)
+            base_cfg_dict = Config._merge_a_into_b(cfg_dict, base_cfg_dict) #将两个配置文件合在一起
             cfg_dict = base_cfg_dict
 
             # merge cfg_text
@@ -275,6 +282,20 @@ class Config:
 
         Returns:
             dict: The modified dict of ``b`` using ``a``.
+            将 dict ``a`` 合并到 dict ``b``（non-inplace）。
+
+         ``a`` 中的值将覆盖 ``b``。 ``b`` 先复制以避免
+         就地修改。
+
+         参数：
+             a (dict)：要合并到“b”中的源字典。
+             b (dict)：要从“a”中获取键的原始字典。
+             allow_list_keys (bool)：如果为 True，则为 int 字符串键（例如“0”、“1”）
+               在源“a”中是允许的，并将替换的元素
+               如果 b 是列表，则为 b 中的相应索引。 默认值：假。
+
+         return：
+             dict：使用 ``a`` 修改的 ``b`` 的字典。
 
         Examples:
             # Normally merge a into b.
@@ -291,6 +312,25 @@ class Config:
             >>> Config._merge_a_into_b(
             ...     {'0': dict(a=2)}, [dict(a=1), dict(b=2)], True)
             [{'a': 2}, {'b': 2}]
+            这段代码是一个函数 _merge_a_into_b(a, b, allow_list_keys)，它把字典 a 中的键值对合并到字典 b 中。它有三个参数：
+
+a: 需要合并到 b 中的字典
+b: 被合并的字典
+allow_list_keys: 如果为 True, 则允许合并 a 中的键为数字的键值对到 b 中的列表中
+它会遍历 a 中的键值对，对于每个键值对：
+
+如果 allow_list_keys 为 True，键为数字且 b 是列表，则该键值对会被添加到 b 的对应索引位置上
+如果值是字典，并且该键在 b 中存在，则该值会被递归合并到 b 中对应键的值上
+如果值是字典，并且该键不在 b 中，则该值会被添加到 b 中
+如果值不是字典，则该键值对会被添加到 b 中
+最后返回 b
+
+这段代码中使用了一个特殊字符串常量 DELETE_KEY,如果在a中的字典中有这个key并且为True，则忽略a中的值，不进行合并。
+
+如果在合并时不满足条件，会抛出异常，例如：
+
+如果 allow_list_keys 为 True 但 a 的键不是数字，会抛出 TypeError
+如果 b[k] 不是字典或列表，会抛出 TypeError
         """
         b = b.copy()
         for k, v in a.items():
@@ -320,13 +360,13 @@ class Config:
     def fromfile(filename,
                  use_predefined_variables=True,
                  import_custom_modules=True):
-        if isinstance(filename, Path):
+         if isinstance(filename, Path):
             filename = str(filename)
-        cfg_dict, cfg_text = Config._file2dict(filename,
+         cfg_dict, cfg_text = Config._file2dict(filename,
                                                use_predefined_variables)
-        if import_custom_modules and cfg_dict.get('custom_imports', None):
+         if import_custom_modules and cfg_dict.get('custom_imports', None):
             import_modules_from_strings(**cfg_dict['custom_imports'])
-        return Config(cfg_dict, cfg_text=cfg_text, filename=filename) #初始化函数
+         return Config(cfg_dict, cfg_text=cfg_text, filename=filename) #初始化函数
 
     @staticmethod
     def fromstring(cfg_str, file_format):
@@ -568,20 +608,20 @@ class Config:
             file (str, optional): Path of the output file where the config
                 will be dumped. Defaults to None.
         """
-        import mmcv
+        import mmmcv
         cfg_dict = super().__getattribute__('_cfg_dict').to_dict()
         if file is None:
             if self.filename is None or self.filename.endswith('.py'):
                 return self.pretty_text
             else:
                 file_format = self.filename.split('.')[-1]
-                return mmcv.dump(cfg_dict, file_format=file_format)
+                return mmmcv.dump(cfg_dict, file_format=file_format)
         elif file.endswith('.py'):
             with open(file, 'w', encoding='utf-8') as f:
                 f.write(self.pretty_text)
         else:
             file_format = file.split('.')[-1]
-            return mmcv.dump(cfg_dict, file=file, file_format=file_format)
+            return mmmcv.dump(cfg_dict, file=file, file_format=file_format)
 
     def merge_from_dict(self, options, allow_list_keys=True):
         """Merge list into cfg_dict.
@@ -647,6 +687,7 @@ def add_args(parser, cfg, prefix=''):
         else:
             print(f'cannot parse key {prefix + k} of type {type(v)}')
     return parser
+
 
 class DictAction(Action):
     """
